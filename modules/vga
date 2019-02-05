@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Example module for handling a VGA monitor
+
+info() {
+    vga_line=$(xrandr | awk '$1=="VGA1" && $2=="connected" {print }')
+    if [[ -n $vga_line ]]; then
+        is_disabled_line=$(echo $vga_line | awk '{print $3}' | grep "^(")
+        if [[ -n $is_disabled_line ]]; then
+            vga_device="vga"
+        else
+            vga_device="vga connected"
+        fi
+    fi
+
+    # If we disconnect the monitor without first disabling it, it leaves
+    # behind a virtual X11 device
+    vga_badly_disconnected_line=$(xrandr | awk '$1=="h:" {print $1}')
+    if [[ -n $vga_badly_disconnected_line ]]; then
+        vga_device="vga badly disconnected"
+    fi
+
+    if [[ -z "$vga_device" ]]; then
+        vga_device="null"
+    fi
+}
+
+toggle() {
+    mount=$(echo "$vga_device" | awk '{print $2}')
+
+    if [[ -z $mount ]]; then
+        xrandr --output VGA1 --left-of LVDS1 --auto
+        notify-send "vga monitor connected"
+    else
+        xrandr --output VGA1 --off
+        notify-send "vga monitor disabled"
+    fi
+
+}
+
+main() {
+    info
+
+    if [[ "$1" == "toggle" ]]; then
+        toggle
+    else
+        echo $vga_device
+    fi
+}
+
+main $1

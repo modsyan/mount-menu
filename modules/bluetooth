@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Example module for handling connecting and disconnecting a bluetooth device
+# (for example, a bluetooth speaker)
+# It uses the bluetooth command from TLP to turn on bluetooth before connecting,
+# and turning it off after disconnecting the device
+
+info() {
+    address="00:00:00:00:00:00"
+    bluetooth_status=$(sudo bluetooth | awk '{print $3}')
+
+    if [[ "$bluetooth_status" == "on" ]]; then
+        device_status=$(bluetoothctl info $address | awk '$1=="Connected:" {print $2}')
+    fi
+}
+
+stat() {
+    if [[ "$bluetooth_status" == "off" ]]; then
+        echo "bluetooth off"
+    elif [[ "$device_status" == "no" ]]; then
+        echo "bluetooth device disconnected"
+    else
+        echo "bluetooth device connected"
+    fi
+}
+
+toggle() {
+    if [[ "$device_status" == "yes" ]]; then
+        bluetoothctl disconnect $address
+        sudo bluetooth off
+
+        notify-send "bluetooth device disconnected"
+    else
+        notify-send "bluetooth device connecting..."
+
+        if [[ "$bluetooth_status" == "off" ]]; then
+            sudo bluetooth on
+            sleep 1 # Has to wait after enabling bluetooth for bluetoothctl to detect the blueooth device
+        fi
+
+        bluetoothctl power on
+        bluetoothctl connect $address
+
+        info
+        if [[ "$device_status" == "yes" ]]; then
+            notify-send "bluetooth device connected"
+        else
+            notify-send "bluetooth: problem connecting"
+        fi
+    fi
+}
+
+main() {
+    info
+
+    if [[ "$1" == "toggle" ]]; then
+        toggle
+    else
+        stat
+    fi
+}
+
+main $1

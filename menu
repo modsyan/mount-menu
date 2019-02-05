@@ -1,0 +1,38 @@
+#!/bin/bash
+
+MODULE_PATH="$(pwd)/modules/"
+
+get_modules() {
+    modules="$(ls -l $MODULE_PATH | awk -v pwd=$MODULE_PATH 'NR != 1 {printf "%s/%s\n", pwd, $NF}')"
+}
+
+get_status() {
+    for m in $modules; do
+        s="$($m)"
+        if [[ "$s" != "null" ]]; then
+            if [[ -z $devices ]]; then
+                devices="$s"
+            else
+                devices="$s"$'\n'"$devices"
+            fi
+        fi
+    done
+}
+
+run_module() {
+    echo $($MODULE_PATH/$module toggle "$selection")
+}
+
+main() {
+    get_modules
+    get_status
+
+    selection="$(echo "$devices" | dmenu -i -p "mount")"
+    module=$(echo $selection | awk '{print $1}')
+
+    if [[ -n "$selection" ]]; then
+        run_module
+    fi
+}
+
+main

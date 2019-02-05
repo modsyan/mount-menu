@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Example module for handling a networked drive
+# It uses a separate script to check if we are on a specific network,
+# and only displays the networked drive if we are
+
+info() {
+    NFS_PATH="nfs.lan:/srv"
+    is_home=$(is-on-home-network)
+
+    if [[ $is_home == "1" ]]; then
+        nfs_drive="$(df -h | awk -v nfs="$NFS_PATH" '$1==nfs {printf "nfs (%s) %s\n", $2, $6}')"
+
+        if [[ -z $nfs_drive ]]; then
+            nfs_drive="nfs"
+        fi
+    else
+        nfs_drive="null"
+    fi
+}
+
+toggle() {
+    mount=$(echo "$nfs_drive" | awk '{print $3}')
+
+    if [[ -z $mount ]]; then
+        sudo -A mount $NFS_PATH /mnt/net
+        notify-send "nfs mounted"
+    else
+        sudo -A umount -f /mnt/net
+        notify-send "nfs unmounted"
+    fi
+}
+
+main() {
+    info
+
+    if [[ "$1" == "toggle" ]]; then
+        toggle
+    else
+        echo $nfs_drive
+    fi
+}
+
+main $1

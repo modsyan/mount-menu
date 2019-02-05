@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Example module for handling any connected usb drive
+# It allows only a single drive to be mounted at a specific mountpoint
+
+info() {
+    usb_drive="$(lsblk -rpo "name,type,size,rm,mountpoint" |
+        awk '$2=="part" && $4==1 {printf "usb %s (%s) %s\n", $1, $3, $5}')"
+
+    if [[ -z "$usb_drive" ]]; then
+        usb_drive="null"
+    fi
+}
+
+toggle() {
+    echo $selection
+    mount=$(echo "$selection" | awk '{print $4}')
+    name=$(echo "$selection" | awk '{print $2}')
+
+    if [[ -z $mount ]]; then
+        usb_mountpoint="$(lsblk -rpo "mountpoint" |
+            awk '$1=="/mnt/usb" {print $1}')"
+
+        if [[ -n $usb_mountpoint ]]; then
+            sudo -A umount /mnt/usb
+        fi
+
+        sudo -A mount $name /mnt/usb
+        notify-send "$name mounted on /mnt/usb"
+    else
+        sudo -A umount /mnt/usb
+        notify-send "$name unmounted"
+    fi
+}
+
+menu() {
+    info
+
+    if [[ "$1" == "toggle" ]]; then
+        shift
+        selection="$*"
+        toggle
+    else
+        echo "$usb_drive"
+    fi
+}
+
+menu $1 $2

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Example module for mounting a single drive
+
+info() {
+    hdd_drive="$(lsblk -rpo "name,type,size,rm,mountpoint" |
+        awk '$1=="/dev/sda1" {printf "hdd (%s) %s\n", $3, $5}')"
+}
+
+toggle() {
+    mount=$(echo "$hdd_drive" | awk '{print $3}')
+
+    if [[ -z $mount ]]; then
+        sudo -A mount /dev/sda1 /mnt/hdd
+        notify-send "hdd mounted on /mnt/hdd"
+    else
+        sudo -A umount /dev/mapper/sda1
+        notify-send "hdd unmounted"
+    fi
+}
+
+main() {
+    info
+
+    if [[ "$1" == "toggle" ]]; then
+        toggle
+    else
+        echo $hdd_drive
+    fi
+}
+
+main $1
