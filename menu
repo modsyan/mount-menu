@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# If you are using this script by symlinking it from ~/.local/bin or similar,
+# set MODULE_PATH to an absolute path to the modules directory
 MODULE_PATH="$(pwd)/modules/"
 
 get_modules() {
